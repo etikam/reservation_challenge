@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+{% load static %}
+<head>
+    {% include "app/_partials/meta_data.html" %}
+
+    <!-- Favicon (icon for application) -->
+    <!-- <link rel="icon" href="img/core-img/favicon.ico"> --> 
+     {% include 'app/_partials/styles.html' %}
+</head>
+
+<body>
+    <div class="container">
+    
+        <!-- Navigation section -->
+        {% block header %}
+            {% include 'app/_partials/navbar.html' %}
+        {% endblock header %}
+            <!-- Main section -->
+        {% block main %}
+          
+        {% endblock main %}
+
+        <!-- Footer section -->
+        {% block footer %}
+  
+        {% endblock footer %}
+
+
+        <!-- Script section -->
+        {% block scripts %}
+            {% include 'app/_partials/scripts.html' %}
+        {% endblock scripts %}
+    </div>
+</body>
+
+</html>

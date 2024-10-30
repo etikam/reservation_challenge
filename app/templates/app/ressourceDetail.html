@@ -1,0 +1,76 @@
+{% extends "app/template.html" %}
+{% load custom_filter %}
+{% block main %}
+<style>
+    body {
+        background-color: rgb(58, 58, 58);
+    }
+
+    .card {
+        margin: 20px auto; /* Ajout de marges */
+        border-radius: 15px; /* Coins arrondis */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Ombre */
+    }
+
+    .btn {
+        width: 100%; /* Les boutons remplissent la colonne */
+    }
+</style>
+
+<div class="container d-flex justify-content-center align-items-center">
+    <div class="card w-50">
+        <img src="{{ object.image }}" class="card-img-top" alt="Image de {{ object.title }}">
+        {% if object.is_available %}
+          
+        <p class="alert alert-primary fs-5 text-center" style="font-weight: 600;">Disponible</p>
+        {% else %}
+        <p class="alert alert-warning fs-5 text-center" style="font-weight: 600;">Occupé</p>
+        
+        {% endif %}
+
+        <div class="card-body">
+
+            <div class="row">
+                <div class="col">
+                    <h5 class="card-title text-primary fs-1">{{ object.name }}</h5> 
+                </div>
+               
+                <div class="col">
+                    <h6 class="card-title text-warning fs-4">{{ object.price|price }}</h6>
+                </div>
+
+                <!-- affichage des detais spécifiques aux ressource de type salle -->
+                {% if ressource_type == 'Room' %}
+                    <p><span style="font-weight: 500; font-size:large">Capacité :</span> {{object.capacity}}</p>
+                {% endif %}
+
+                <!-- affichage des detais spécifiques aux ressource de type salle -->
+                {% if ressource_type == 'Service' %}
+                    <p><span style="font-weight: 500; font-size:large">Type de service :</span> {{object.service_type}}</p>
+                    <p><span style="font-weight: 500; font-size:large">Service Provider :</span> {{object.provider.name}}</p>
+                {% endif %}
+
+                <!-- affichage des detais spécifiques aux ressource de type salle -->
+                {% if ressource_type == 'Equipment' %}
+                    <p><span style="font-weight: 500; font-size:large">Maintenance requise :</span> {{object.maintenance_required}}</p>
+                {% endif %}
+                
+            </div>
+
+            <p class="card-text">{{ object.description }}</p> 
+            <div class="row">
+                <div class="col">
+                    {% if object.is_available %}
+                        <a href="#" class="btn btn-primary">Réserver</a>
+                    {% else %}
+                        <a href="#" class="btn btn-info">File D'attente </a>
+                    {% endif %}
+                </div>
+                <div class="col">
+                    <a href="#" class="btn btn-secondary">Annuler</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main %}

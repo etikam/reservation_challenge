@@ -1,0 +1,68 @@
+<!-- Room view alls -->
+<div class="row">
+    <h2>Nos salles</h2>
+    <hr>
+    {% for room in ressources.room %}
+        <div class="card border" style="width: 18rem; margin: 10px;">
+            <img src="{{ room.image }}" class="card-img-top" alt="{{ room.name }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ room.name }}</h5>
+                <p class="card-text">Capacité : {{ room.capacity }} personnes</p>
+                <p class="card-text">Emplacement : {{ room.location }}</p>
+                <div class="row">
+                    <a href="{% url 'room-details' room.pk %}" class="btn btn-primary">Réserver</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="alert alert-info">Aucune salle disponible.</p>
+    {% endfor %}
+</div>
+<!-- Equipments views all -->
+<div class="row">
+    <h2>Nos Équipements</h2>
+    <hr>
+    {% for equipment in ressources.equipment %}
+        <div class="card border" style="width: 18rem; margin: 10px;">
+            <img src="{{ equipment.image }}" class="card-img-top" alt="{{ equipment.name }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ equipment.name }}</h5>
+                <p class="card-text">{{ equipment.description|slice:':50' }}...</p>
+                <p class="card-text">Maintenance requise : {{ equipment.maintenance_required|yesno:"Oui,Non" }}</p>
+            <div class="row">
+                <a href="{% url 'equipment-details' equipment.pk %}" class="btn btn-primary">Réserver</a>
+            </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="alert alert-info">Aucun équipement disponible.</p>
+    {% endfor %}
+</div>
+
+
+<!-- Service View all -->
+<div class="row">
+    <h2>Nos Services</h2>
+    <hr>
+    {% for service in ressources.service %}
+        <div class="card border" style="width: 18rem; margin: 10px;">
+            <img src="{{ service.image }}" class="card-img-top w-100" style="height:100px" alt="{{ service.name }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ service.name }}</h5>
+                <p class="card-text">Type de Service : {{ service.service_type }}</p>
+                <p class="card-text">Fournisseur(s) : 
+                    {% for provider in service.provider.all %}
+                        {{ provider.name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+                <div class="row">
+                    <a href="{% url 'service-details' service.pk %}" class="btn btn-primary">Réserver</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="alert alert-info">Aucun service disponible.</p>
+    {% endfor %}
+</div>
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ab quasi nam quidem eaque nemo architecto dolore impedit alias necessitatibus soluta sed delectus excepturi temporibus, est nostrum, autem ullam cupiditate dicta?
