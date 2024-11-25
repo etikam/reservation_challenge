@@ -1,0 +1,62 @@
+{% extends "app/template.html" %}
+
+{% block main %}
+    
+<div class="container">
+    <h1 class="text-center mb-5">Mes Réservations</h1>
+
+    <!-- Liste de réservations -->
+    <div class="row">
+        {% for reservation in my_reservations %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow-lg border-0 reservation-card" style="transition: transform 0.2s;">
+
+                <div class="card-body">
+                    <!-- En-tête de la carte avec nom de la ressource et statut -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">{{ reservation.resource }}</h5>
+                        
+                        Status:<span class="badge {% if reservation.status == 'confirmed' %}bg-success{% elif reservation.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ reservation.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <!-- Détails de la réservation -->
+                    <p class="card-text">
+                        <strong>Date :</strong> {{ reservation.start_time|date:"d M Y" }}<br>
+                        <strong>Heure :</strong> {{ reservation.start_time|date:"H:i" }} - {{ reservation.end_time|date:"H:i" }}<br>
+                        <strong>Réservé par :</strong> {{ reservation.user.username }}
+                    </p>
+
+                    <!-- Boutons d'actions -->
+                    <div class="d-flex justify-content-between">
+                        {% if reservation.status != 'cancelled' %}
+                            <!-- Options pour statut non annulé -->
+                            <a href="" class="btn btn-primary btn-sm">Poursuivre vers le paiement</a> 
+                            <a href="{% url 'cancel' reservation.id %}" class="btn btn-danger btn-sm">Annuler</a>
+                        {% else %}
+                            <!-- Option pour statut annulé -->
+                            <a href="{% url 'delete_reservation' reservation.id %}" class="btn btn-secondary btn-sm">Supprimer</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <!-- Message si aucune réservation -->
+        <div class="text-center">
+            <p class="text-muted">Vous n'avez aucune réservation pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Style personnalisé pour l'effet de survol -->
+<style>
+    .reservation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    }
+</style>
+
+{% endblock main %}

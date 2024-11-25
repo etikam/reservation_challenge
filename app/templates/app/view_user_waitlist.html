@@ -1,0 +1,38 @@
+{% extends "app/template.html" %}
+
+{% block main %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Ma File d'Attente</h1>
+
+    {% if waitlist %}
+        <div class="row">
+            {% for entry in waitlist %}
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ entry.resource }}</h5>
+                            <p class="card-text">
+                                <strong>Début :</strong> {{ entry.start_time|date:"d/m/Y H:i" }}<br>
+                                <strong>Fin :</strong> {{ entry.end_time|date:"d/m/Y H:i" }}<br>
+                                <strong>Priorité :</strong> {{ entry.priority }}
+                            </p>
+                            <form action="#" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">Quitter</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            Vous n'avez aucune entrée dans la file d'attente.
+        </div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'home' %}" class="btn btn-primary">Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock  %}

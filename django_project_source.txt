@@ -1,0 +1,714 @@
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\admin.py ==========
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\apps.py ==========
+from django.apps import AppConfig
+
+
+class AccountConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'account'
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\forms.py ==========
+from django import forms
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class RegisterForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    password2 = forms.CharField(
+        label='Confirm Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            'first_name', 'last_name',
+            'username', 'email',
+            'password1', 'password2'
+        ]
+        widgets = {
+            'first_name': forms.TextInput(attrs={
+                'class': 'form-control w-100'
+                }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'form-control w-100'
+                }),
+            'username': forms.TextInput(attrs={
+                'class': 'form-control w-100'
+                }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control w-100'
+                }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(RegisterForm, self).__init__(*args, **kwargs)
+        # Enlever le texte d'aide pour le champ 'username'
+        self.fields['username'].help_text = ''
+
+
+class LoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\models.py ==========
+
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\tests.py ==========
+from django.test import TestCase
+
+# Create your tests here.
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\urls.py ==========
+from django.urls import path
+from .views import loginView, registerView, logoutView
+
+app_name = 'account' 
+urlpatterns = [
+
+    path('login/',loginView,name="login"),
+    path('register/',registerView,name="register"),
+    path('logout/',logoutView,name="logout"),
+
+]
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\views.py ==========
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth import get_user_model
+from .forms import RegisterForm, LoginForm
+from django.contrib import messages
+
+User = get_user_model()
+
+
+def register_view(request):
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            # Récupérer les données du formulaire
+            first_name = form.cleaned_data.get('first_name')
+            last_name = form.cleaned_data.get('last_name')
+            username = form.cleaned_data.get('username')
+            email = form.cleaned_data.get('email')
+            password = form.cleaned_data.get('password1')
+            password2 = form.cleaned_data.get('password2')
+
+            if password != password2:
+                messages.error(request, 'Les mots de passe saisis ne correspondent pas')
+            else:  # Créer l'utilisateur en utilisant create_user
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                )
+                user.first_name = first_name
+                user.last_name = last_name
+                user.save()
+
+                # Connecter l'utilisateur après la création
+                login(request, user)
+                return redirect('home')
+    else:
+        form = RegisterForm()
+
+    return render(request, 'register.html', {'form': form})
+
+
+def login_view(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                # Connecter l'utilisateur si l'authentification est réussie
+                login(request, user)
+                return redirect('home')  # Redirige vers la page d'accueil après connexion
+            else:
+                # Ajouter un message d'erreur si l'authentification échoue
+                form.add_error(None, "Nom d'utilisateur ou mot de passe incorrect.")
+    else:
+        form = LoginForm()
+
+    return render(request, 'login.html', {'form': form})
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('home')
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\account\__init__.py ==========
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\templatetags\custom_filter.py ==========
+from django import template
+
+register = template.Library()
+
+@register.filter()
+def price(value):
+    try:
+        value = float(value)
+        return f"${value:.0f} GNF /Heure" 
+    except (ValueError, TypeError):
+        # s'il n'arrive pas à convertir la valeur du prix passé en argument du filtre, 
+        # ce que le prix n'est probablement pas un prix valiide; donc je l'annule
+        return "$0.00 GNF" 
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\templatetags\__init__.py ==========
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\admin.py ==========
+from django.contrib import admin
+from .models import Room, Service, ServiceProvider, Equipment, Reservation
+
+# Register your models here.
+
+@admin.register(Room)
+class RoomAdmin(admin.ModelAdmin):
+    list_display = ('name', 'capacity', 'location', 'is_available')  # Affiche ces champs dans la liste
+    search_fields = ('name', 'location')  # Permet de rechercher par nom et localisation
+    list_filter = ('is_available',)  # Filtre par disponibilité
+
+
+@admin.register(Service)
+class ServiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'service_type', 'is_available')  # Affiche ces champs dans la liste
+    search_fields = ('name', 'service_type')  # Permet de rechercher par nom et type de service
+    list_filter = ('is_available',)  # Filtre par disponibilité
+
+
+@admin.register(ServiceProvider)
+class ServiceProviderAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact')  # Affiche ces champs dans la liste
+    search_fields = ('name', 'contact')  # Permet de rechercher par nom et contact
+
+
+@admin.register(Equipment)
+class EquipmentAdmin(admin.ModelAdmin):
+    list_display = ('name', 'maintenance_required', 'is_available')  # Affiche ces champs dans la liste
+    search_fields = ('name',)  # Permet de rechercher par nom et type d'équipement
+    list_filter = ('maintenance_required', 'is_available')  # Filtre par entretien requis et disponibilité
+
+
+@admin.register(Reservation)
+class ReservationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'resource', 'start_time', 'end_time', 'status')  # Affiche ces champs dans la liste
+    search_fields = ('user__username', 'resource__name', 'status')  # Permet de rechercher par nom d'utilisateur, ressource et statut
+    list_filter = ('status', 'start_time')  # Filtre par statut et temps de début
+    readonly_fields = ('user',)  # Rendre le champ utilisateur en lecture seule
+
+    def delete_queryset(self, request, queryset):
+        # Parcours de chaque réservation à supprimer
+        for reservation in queryset:
+            # Vérifie si la ressource a un champ `is_available`
+            if hasattr(reservation.resource, 'is_available'):
+                # Met le champ `is_available` de la ressource à True
+                reservation.resource.is_available = True
+                reservation.resource.save()
+
+        # Appelle la méthode delete_queryset() de base pour supprimer les objets
+        super().delete_queryset(request, queryset)
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\apps.py ==========
+from django.apps import AppConfig
+
+
+class AppConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'app'
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\forms.py ==========
+from django import forms
+from .models import Reservation
+class ReservationForm(forms.ModelForm):
+    class Meta:
+        model = Reservation
+        fields = ['start_time', 'end_time']
+        widgets = {
+            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+
+    def __init__(self, *args, content_type=None, object_id=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.content_type = content_type
+        self.object_id = object_id
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+
+        if start_time >= end_time:
+            raise forms.ValidationError("Impossible de reserver, créneau horeur invalide")
+        
+        #Vérification de conflits d'heures dans la file d'attente
+        
+        if start_time and end_time:
+            overlapping_reservations = Reservation.objects.filter(
+                content_type=self.content_type,
+                object_id=self.object_id,
+                start_time__lt=end_time,
+                end_time__gt=start_time
+            )
+            if overlapping_reservations.exists():
+                raise forms.ValidationError("Cette ressource est déjà réservée pour ce créneau horaire.")
+
+        return cleaned_data
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\models.py ==========
+from django.db import models
+from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+
+User = get_user_model()
+
+
+# Modèle Parent - Ressource (Resource)
+class Resource(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    price = models.PositiveIntegerField() #Price par heure de l'équipement en franc 
+    is_available = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.name
+    
+# Modèle Salle (Room) - Hérite de Resource
+class Room(Resource):
+    capacity = models.IntegerField(null=True, blank=True)  # Spécifique aux salles
+    location = models.CharField(max_length=255)  # Localisation spécifique des salles
+    # image = models.ImageField(upload_to="rooms_images")
+    image = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"Salle : {self.name} - {self.location}"
+
+
+# Modèle Équipement (Equipment) - Hérite de Resource
+class Equipment(Resource):
+    # equipment_type = models.CharField(max_length=100)  # Type d'équipement
+    maintenance_required = models.BooleanField(default=False)  # Indique si un entretien est nécessaire
+    # image = models.ImageField(upload_to="equipement_images")
+    image = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"Équipement : {self.name}"
+
+
+class ServiceProvider(models.Model):
+    name = models.CharField(max_length=50)
+    description = models.TextField(default="Aucune description")
+    contact = models.CharField(max_length=200)
+
+
+
+# Modèle Service (Service) - Hérite de Resource
+class Service(Resource):
+    service_type = models.CharField(max_length=100)  # Type de service
+    provider = models.ManyToManyField(ServiceProvider,related_name="services")
+    # image = models.ImageField(upload_to="service_images",blank=True,null=True)
+    image = models.CharField(max_length=255)
+    def __str__(self):
+        return f"Service : {self.name} - Fournisseur : {self.provider}"
+
+
+# Modèle Réservation (Reservation)
+class Reservation(models.Model):
+    status_choices = [
+        ('confirmed', 'Confirmed'), #quand le payement est terminé la reservaton est confirmé
+        ('pending', 'Pending'),     #quand le payement n'est pas encore effectué
+        ('cancelled', 'Cancelled'), # quand la reservation est annulée
+        ('ended', 'ended'),         # quand la reservation est consommée, pour gardé l'historique
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reservations")
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    resource = GenericForeignKey('content_type', 'object_id')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    status = models.CharField(max_length=10, choices=status_choices, default='pending')
+
+    
+    
+    def __str__(self):
+        return f"Réservation de {self.resource} par {self.user} de {self.start_time} à {self.end_time}"
+    
+
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\tests.py ==========
+from django.test import TestCase
+
+# Create your tests here.
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\urls.py ==========
+from django.urls import path
+from . import views
+urlpatterns = [
+    path('',views.index, name="home"),
+    path('room/detail/<int:pk>/',views.DetailRoom.as_view(), name="room-details"),
+    path('service/detail/<int:pk>/',views.DetailService.as_view(), name="service-details"),
+    path('equipment/detail/<int:pk>/',views.DetailEquipment.as_view(), name="equipment-details"),
+    path('reservation/<str:resource_type>/<int:resource_id>/',views.create_reservation,name="reserver"),
+    path('myreservations/',views.my_reservation,name="myreservations"),
+    path('cancel/<int:id>/',views.cancel_reservation,name="cancel")
+]
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\views.py ==========
+from typing import Any
+from django.http import HttpResponse
+from django.shortcuts import render,redirect, get_object_or_404
+from django.views import generic
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
+from .forms import ReservationForm
+from .models import (Reservation, 
+                     Room, Service, 
+                     ServiceProvider,
+                     Equipment
+                    )
+
+
+
+# Create your views here.
+
+
+def index(request):
+    ressources = {
+        'room':Room.objects.all().order_by('name'),
+        'equipment':Equipment.objects.all().order_by('name'),
+        'service':Service.objects.all().order_by('name')
+    }
+    context = {
+        'ressources':ressources
+    }
+    return render(request,"app/index.html",context)
+
+
+# Vue de details pour une réssource
+
+class DetailRoom(generic.DetailView):
+    model = Room
+    template_name = 'app/ressourceDetail.html'
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context['ressource_type'] = "Room"
+        
+        return context
+    
+    
+class DetailService(generic.DetailView):
+    model = Service
+    template_name = 'app/ressourceDetail.html'
+
+    
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context['ressource_type'] = "Service"
+        
+        return context
+    
+
+
+class DetailEquipment(generic.DetailView):
+    model = Equipment
+    template_name = 'app/ressourceDetail.html'
+
+    
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context['ressource_type'] = "Equipment"
+        
+        return context
+    
+
+
+# Reservation d'un réssource
+def create_reservation(request,resource_type, resource_id):
+    
+    content_type = ContentType.objects.get(model=resource_type.lower())         # je recupère ici le contentType de la ressource selon ce qui es venu en parametre
+    resource = content_type.get_object_for_this_type(id=resource_id)            # et je recupère la ressource en question sachant de quel model il est (son contentType)(je pouvais utilise les condions pour
+                                                                                # pour tester le parametre resource_type et directement m'adresser au model concerné, mais 
+                                                                                # avec l'ajout eventuel d'autre contentype, ça pourrait devenir chiant, donc je laisse ça pour la gestion dynamique des contentType
+    form = ReservationForm()                                                                          # bien que ça demande une maitrise pour comprendre qu'est ce que ces linges la font)
+    if request.method == 'POST':
+        form = ReservationForm(request.POST, content_type=content_type, object_id=resource.id)
+        if form.is_valid():
+            
+            cleaned_data = form.cleaned_data  
+            reservation = Reservation(
+                user=request.user,  
+                content_type=form.content_type,
+                object_id=form.object_id,
+                start_time=cleaned_data['start_time'],
+                end_time=cleaned_data['end_time'],
+                status='pending'  
+            )
+            reservation.save()
+          
+            # quand le systeme de payment sera mise en place, il faudra d'abord que la personne paye et que le status de la reservation soit à 
+            # avant de désactiver la ressource pour les autres user, mais pour le moment, on le desactiv
+            resource.is_available = False
+            resource.save()
+            messages.success(request,"Vous avez reservé une ressource, veuillez continuer vers le payement pour terminer la reservation")
+            return redirect('home')
+
+
+    return render(request, 'app/reservation_form.html', {
+        'form': form,
+        'resource': resource,
+        'content_type': resource_type
+    })
+
+
+@login_required()
+def my_reservation(request):
+
+    myReservations = Reservation.objects.filter(user=request.user)
+
+    return render(request,'app/my_reservations.html',{'reservations':myReservations})
+
+
+@login_required()
+def cancel_reservation(request,id):
+    reservation = get_object_or_404(Reservation,id=id)
+    ressource = reservation.resource
+    ressource.is_available = True
+    ressource.save()
+    reservation.delete()
+    messages.success(request,'Resservaton annulée avec success')
+    return redirect('home')
+
+
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\app\__init__.py ==========
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\config\asgi.py ==========
+"""
+ASGI config for config project.
+
+It exposes the ASGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
+"""
+
+import os
+
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+application = get_asgi_application()
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\config\settings.py ==========
+"""
+Django settings for config project.
+
+Generated by 'django-admin startproject' using Django 5.1.2.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.1/topics/settings/
+
+For the full list of settings and their values, see
+https://docs.djangoproject.com/en/5.1/ref/settings/
+"""
+
+from pathlib import Path
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-c27(365jnc6ef78l9xg#gz%e4#x=dx&##!^nwe#(a8nkz2dth='
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
+
+ALLOWED_HOSTS = []
+
+
+# Application definition
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'account',
+    'app',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'config.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'config.wsgi.application'
+
+
+# Database
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+
+# Password validation
+# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+
+# Internationalization
+# https://docs.djangoproject.com/en/5.1/topics/i18n/
+
+LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'UTC'
+
+USE_I18N = True
+
+USE_TZ = True
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.1/howto/static-files/
+
+STATIC_URL = 'static/'
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\config\urls.py ==========
+"""
+URL configuration for config project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/5.1/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.contrib import admin
+from django.urls import path,include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('',include('app.urls'))
+]
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\config\wsgi.py ==========
+"""
+WSGI config for config project.
+
+It exposes the WSGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.1/howto/deployment/wsgi/
+"""
+
+import os
+
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+application = get_wsgi_application()
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\config\__init__.py ==========
+
+========== C:\Users\pc\Desktop\CoursBackend_NimbaHub\CoursDjango\reservation\manage.py ==========
+#!/usr/bin/env python
+"""Django's command-line utility for administrative tasks."""
+import os
+import sys
+
+
+def main():
+    """Run administrative tasks."""
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    try:
+        from django.core.management import execute_from_command_line
+    except ImportError as exc:
+        raise ImportError(
+            "Couldn't import Django. Are you sure it's installed and "
+            "available on your PYTHONPATH environment variable? Did you "
+            "forget to activate a virtual environment?"
+        ) from exc
+    execute_from_command_line(sys.argv)
+
+
+if __name__ == '__main__':
+    main()
+

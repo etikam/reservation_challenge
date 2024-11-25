@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+
 
 User = get_user_model()
 
@@ -66,7 +66,7 @@ class Reservation(models.Model):
         ('pending', 'Pending'),
         ('cancelled', 'Cancelled'),
     ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reservations")
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     resource = GenericForeignKey('content_type', 'object_id')
@@ -74,21 +74,81 @@ class Reservation(models.Model):
     end_time = models.DateTimeField()
     status = models.CharField(max_length=10, choices=status_choices, default='pending')
 
-    def clean(self):
-        # Vérifie si la réservation chevauche une réservation existante
-        overlapping_reservations = Reservation.objects.filter(
-            content_type=self.content_type,
-            object_id=self.object_id,
-            start_time__lt=self.end_time,
-            end_time__gt=self.start_time
-        )
-        if overlapping_reservations.exists():
-            raise ValidationError("Cette ressource est déjà réservée pour ce créneau horaire.")
 
-    def save(self, *args, **kwargs):
-        # Appelle la méthode de validation avant de sauvegarder
-        self.full_clean()
-        super().save(*args, **kwargs)
-    
+    @staticmethod
+    def is_overlapping(resource, start_time, end_time):
+        # Récupérer le `ContentType` pour le modèle de la ressource
+        content_type = ContentType.objects.get_for_model(type(resource))
+
+        # Vérifier les chevauchements
+        return Reservation.objects.filter(
+            content_type=content_type,
+            object_id=resource.id,
+            start_time__lt=end_time,
+            end_time__gt=start_time,
+            status="confirmed",
+        ).exists()
+
     def __str__(self):
         return f"Réservation de {self.resource} par {self.user} de {self.start_time} à {self.end_time}"
+    
+
+#model de la fille d'attente
+class Waitlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    resource = GenericForeignKey('content_type', 'object_id')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    priority = models.PositiveIntegerField(default=0)  # Gère l'ordre de priorité dans la file d'attente
+    added_at = models.DateTimeField(auto_now_add=True)  # Date d'ajout à la file d'attente
+
+    class Meta:
+        ordering = ['priority', 'added_at']  # Priorité, puis ordre d'ajout
+        unique_together = ('user', 'content_type', 'object_id', 'start_time', 'end_time')
+
+    def __str__(self):
+        return f"File d'attente : {self.user} pour {self.resource} du {self.start_time} au {self.end_time}"
+
+    @staticmethod
+    def add_to_waitlist(user, resource, start_time, end_time):
+        """Ajoute un utilisateur à la file d'attente pour une ressource donnée."""
+        content_type = ContentType.objects.get_for_model(resource)
+        
+        # Vérifie si une entrée existe déjà
+        if Waitlist.objects.filter(
+            user=user,
+            content_type=content_type,
+            object_id=resource.id,
+            start_time=start_time,
+            end_time=end_time
+        ).exists():
+            raise ValueError("Vous êtes déjà dans la file d'attente pour cette ressource et période.")
+        else:
+            # Calcule la priorité basée sur le nombre existant dans la file d'attente
+            priority = Waitlist.objects.filter(
+                content_type=content_type,
+                object_id=resource.id
+            ).count() + 1
+            
+            # Crée l'entrée dans la file d'attente
+            Waitlist.objects.create(
+                user=user,
+                content_type=content_type,
+                object_id=resource.id,
+                start_time=start_time,
+                end_time=end_time,
+                priority=priority
+            )
+
+
+    def promote(self):
+        """Augmente la priorité dans la file d'attente."""
+        if self.priority > 1:
+            self.priority -= 1
+            self.save()
+
+    def remove_from_waitlist(self):
+        """Supprime l'utilisateur de la file d'attente."""
+        self.delete()

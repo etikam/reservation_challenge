@@ -29,8 +29,8 @@ def registerView(request):
                                                 )
                 user.first_name = first_name
                 user.last_name = last_name
-                if is_writer:
-                    user.is_writer= True
+                # if is_writer:
+                #     user.is_writer= True
                 
                 user.save()
                 # Connecter l'utilisateur après la création

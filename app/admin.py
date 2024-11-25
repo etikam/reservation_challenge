@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Room, Service, ServiceProvider, Equipment, Reservation
+from .models import Room, Service, ServiceProvider, Equipment, Reservation, Waitlist
 
 # Register your models here.
 
@@ -37,3 +37,7 @@ class ReservationAdmin(admin.ModelAdmin):
     list_filter = ('status', 'start_time')  # Filtre par statut et temps de début
     readonly_fields = ('user',)  # Rendre le champ utilisateur en lecture seule
 
+
+@admin.register(Waitlist)
+class AdminWaitlist(admin.ModelAdmin):
+    pass

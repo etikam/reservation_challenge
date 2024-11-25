@@ -61,7 +61,7 @@
             <div class="row">
                 <div class="col">
                     {% if object.is_available %}
-                        <a href="#" class="btn btn-primary">Réserver</a>
+                        <a href="{% url 'reserver' object.id ressource_type %}" class="btn btn-primary">Réserver</a>
                     {% else %}
                         <a href="#" class="btn btn-info">File D'attente </a>
                     {% endif %}
